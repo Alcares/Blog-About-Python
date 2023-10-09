@@ -1,7 +1,9 @@
 from imports import *
+from db import select, insert_row
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_KEY')
+#app.config['SECRET_KEY'] = os.environ.get('FLASK_KEY')
+app.config['SECRET_KEY'] = 'asdkjfhsajhgfdjhsagdf'
 ckeditor = CKEditor(app)
 Bootstrap5(app)
 
@@ -9,9 +11,17 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
+class User(UserMixin):
+    def __init__(self, user_id):
+        self.id = user_id
+        super().__init__()
+
+
 @login_manager.user_loader
 def load_user(user_id):
-    return db.get_or_404(User, user_id)
+    user_result = select(f"SELECT * FROM users WHERE id={user_id}")
+    user = User(user_result['id'])
+    return user
 
 
 gravatar = Gravatar(app,
@@ -22,48 +32,6 @@ gravatar = Gravatar(app,
                     force_lower=False,
                     use_ssl=False,
                     base_url=None)
-
-
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///posts.db"
-db = SQLAlchemy()
-db.init_app(app)
-
-
-class BlogPost(db.Model):
-    __tablename__ = "blog_posts"
-    id = db.Column(db.Integer, primary_key=True)
-    author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    author = relationship("User", back_populates="posts")
-    title = db.Column(db.String(250), unique=True, nullable=False)
-    subtitle = db.Column(db.String(250), nullable=False)
-    date = db.Column(db.String(250), nullable=False)
-    body = db.Column(db.Text, nullable=False)
-    img_url = db.Column(db.String(250), nullable=False)
-    comments = relationship("Comment", back_populates="parent_post")
-
-
-class User(UserMixin, db.Model):
-    __tablename__ = "users"
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(100))
-    name = db.Column(db.String(100))
-    posts = relationship("BlogPost", back_populates="author")
-    comments = relationship("Comment", back_populates="comment_author")
-
-
-class Comment(db.Model):
-    __tablename__ = "comments"
-    id = db.Column(db.Integer, primary_key=True)
-    text = db.Column(db.Text, nullable=False)
-    author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    comment_author = relationship("User", back_populates="comments")
-    post_id = db.Column(db.Integer, db.ForeignKey("blog_posts.id"))
-    parent_post = relationship("BlogPost", back_populates="comments")
-
-
-with app.app_context():
-    db.create_all()
 
 
 def admin_only(f):
@@ -80,9 +48,7 @@ def admin_only(f):
 def register():
     form = RegisterForm()
     if form.validate_on_submit():
-
-        result = db.session.execute(db.select(User).where(User.email == form.email.data))
-        user = result.scalar()
+        user = select(f"SELECT * FROM users WHERE email='{form.email.data}'")
         if user:
             flash("You've already signed up with that email, log in instead!")
             return redirect(url_for('login'))
@@ -92,13 +58,11 @@ def register():
             method='pbkdf2:sha256',
             salt_length=8
         )
-        new_user = User(
-            email=form.email.data,
-            name=form.name.data,
-            password=hash_and_salted_password,
-        )
-        db.session.add(new_user)
-        db.session.commit()
+
+        num_of_users = select("SELECT COUNT(*) FROM users")['count']
+        insert_row(f"INSERT INTO users VALUES ({num_of_users + 1}, '{form.email.data}', '{hash_and_salted_password}', '{form.name.data}')")
+        user = select(f"SELECT * FROM users WHERE email='{form.email.data}'")
+        new_user = User(user['id'])
         login_user(new_user)
         return redirect(url_for("get_all_posts"))
     return render_template("register.html", form=form, current_user=current_user)
@@ -109,15 +73,15 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         password = form.password.data
-        result = db.session.execute(db.select(User).where(User.email == form.email.data))
-        user = result.scalar()
+        user = select(f"SELECT * FROM users WHERE email='{form.email.data}'")
         if not user:
             flash("That email does not exist, please try again.")
             return redirect(url_for('login'))
-        elif not check_password_hash(user.password, password):
+        elif not check_password_hash(user['password'], password):
             flash('Password incorrect, please try again.')
             return redirect(url_for('login'))
         else:
+            user = User(user['id'])
             login_user(user)
             return redirect(url_for('get_all_posts'))
 
@@ -132,14 +96,13 @@ def logout():
 
 @app.route('/')
 def get_all_posts():
-    result = db.session.execute(db.select(BlogPost))
-    posts = result.scalars().all()
+    posts = select('SELECT * FROM blog_posts', fetch_all=True)
     return render_template("index.html", all_posts=posts, current_user=current_user)
 
 
 @app.route("/post/<int:post_id>", methods=["GET", "POST"])
 def show_post(post_id):
-    requested_post = db.get_or_404(BlogPost, post_id)
+    requested_post = select(f'SELECT * FROM blog_posts WHERE id={post_id}', fetch_all=False)
     comment_form = CommentForm()
     if comment_form.validate_on_submit():
         if not current_user.is_authenticated:
@@ -177,31 +140,26 @@ def add_new_post():
 
 @app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
 def edit_post(post_id):
-    post = db.get_or_404(BlogPost, post_id)
+    post = select(f"SELECT FROM blog_posts WHERE id={post_id}")
+    print(post_id)
+    print(post)
     edit_form = CreatePostForm(
-        title=post.title,
-        subtitle=post.subtitle,
-        img_url=post.img_url,
-        author=post.author,
-        body=post.body
+        title=post['title'],
+        subtitle=post['subtitle'],
+        img_url=post['img_url'],
+        author=post['author_id'],
+        body=post['body']
     )
     if edit_form.validate_on_submit():
-        post.title = edit_form.title.data
-        post.subtitle = edit_form.subtitle.data
-        post.img_url = edit_form.img_url.data
-        post.author = current_user
-        post.body = edit_form.body.data
-        db.session.commit()
-        return redirect(url_for("show_post", post_id=post.id))
+        insert_row(f"UPDATE blog_posts SET title='{edit_form.title.data}', subtitle='{edit_form.subtitle.data}', img_url='{edit_form.img_url.data}', author_id='{current_user}', body='{edit_form.body.data}' WHERE id={post_id}")
+        return redirect(url_for("show_post", post_id=post['id']))
     return render_template("make-post.html", form=edit_form, is_edit=True, current_user=current_user)
 
 
 @app.route("/delete/<int:post_id>")
 @admin_only
 def delete_post(post_id):
-    post_to_delete = db.get_or_404(BlogPost, post_id)
-    db.session.delete(post_to_delete)
-    db.session.commit()
+    insert_row(f"DELETE FROM blog_posts WHERE id={post_id}")
     return redirect(url_for('get_all_posts'))
 
 
