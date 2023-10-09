@@ -51,10 +51,9 @@ def register():
             user = select(f"SELECT * FROM users WHERE email='{form.email.data}'")
         except:
             pass
-        else:
-            if user:
-                flash("You've already signed up with that email, log in instead!")
-                return redirect(url_for('login'))
+        if type(user) != TypeError:
+            flash("You've already signed up with that email, log in instead!")
+            return redirect(url_for('login'))
 
         hash_and_salted_password = generate_password_hash(
             form.password.data,
@@ -76,17 +75,21 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         password = form.password.data
-        user = select(f"SELECT * FROM users WHERE email='{form.email.data}'")
-        if not user:
+        try:
+            user = select(f"SELECT * FROM users WHERE email='{form.email.data}'")
+        except:
+            pass
+        if type(user) == TypeError:
             flash("That email does not exist, please try again.")
             return redirect(url_for('login'))
-        elif not check_password_hash(user['password'], password):
-            flash('Password incorrect, please try again.')
-            return redirect(url_for('login'))
         else:
-            user = User(user['id'])
-            login_user(user)
-            return redirect(url_for('get_all_posts'))
+            if not check_password_hash(user['password'], password):
+                flash('Password incorrect, please try again.')
+                return redirect(url_for('login'))
+            else:
+                user = User(user['id'])
+                login_user(user)
+                return redirect(url_for('get_all_posts'))
 
     return render_template("login.html", form=form, current_user=current_user)
 
@@ -208,3 +211,4 @@ if __name__ == "__main__":
     app.run(debug=False)
 
 # TODO Optional: add contact me email functionality
+# TODO display max 5 posts on main page

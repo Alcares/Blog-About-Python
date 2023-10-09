@@ -54,15 +54,5 @@ def insert_row(query: str):
 
 
 if __name__ == '__main__':
-    row_count = select(
-        """select 
-	        u.email,
-	        c.text,
-	        u.name
-            from comments c
-            left outer join blog_posts b
-	            on c.post_id = b.id
-            left outer join users u
-	            on u.id = c.author_id""", fetch_all=True
-    )
-    print(row_count)
+    user = select(f"SELECT * FROM users WHERE email='admin@admin.com'")
+    print(user['password'])
