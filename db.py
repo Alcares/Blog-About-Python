@@ -7,7 +7,6 @@ def select(query: str, fetch_all: bool = False) -> list[dict] | dict:
     conn = None
     try:
         params = config()
-        print('Connecting to the PostgreSQL database...')
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         cur.execute(query)
@@ -20,16 +19,13 @@ def select(query: str, fetch_all: bool = False) -> list[dict] | dict:
                 total.append(r)
         else:
             result = cur.fetchone()
-            print(result)
             col_names = [desc[0] for desc in cur.description]
             total = {col_names[i]: result[i] for i in range(len(col_names))}
         cur.close()
 
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
         return error
     else:
-        print('Success')
         return total
     finally:
         if conn is not None:
@@ -41,7 +37,6 @@ def insert_row(query: str):
     conn = None
     try:
         params = config()
-        print('Connecting to the PostgreSQL database...')
         conn = psycopg2.connect(**params)
         cur = conn.cursor()
         cur.execute(query)
@@ -59,5 +54,15 @@ def insert_row(query: str):
 
 
 if __name__ == '__main__':
-    result = select(f"SELECT FROM users WHERE id=2", fetch_all=False)
-    print(result)
+    row_count = select(
+        """select 
+	        u.email,
+	        c.text,
+	        u.name
+            from comments c
+            left outer join blog_posts b
+	            on c.post_id = b.id
+            left outer join users u
+	            on u.id = c.author_id""", fetch_all=True
+    )
+    print(row_count)

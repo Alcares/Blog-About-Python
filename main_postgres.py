@@ -2,8 +2,7 @@ from imports import *
 from db import select, insert_row
 
 app = Flask(__name__)
-#app.config['SECRET_KEY'] = os.environ.get('FLASK_KEY')
-app.config['SECRET_KEY'] = 'asdkjfhsajhgfdjhsagdf'
+app.config['SECRET_KEY'] = os.environ.get('FLASK_KEY')
 ckeditor = CKEditor(app)
 Bootstrap5(app)
 
@@ -104,19 +103,32 @@ def get_all_posts():
 def show_post(post_id):
     requested_post = select(f'SELECT * FROM blog_posts WHERE id={post_id}', fetch_all=False)
     comment_form = CommentForm()
+    all_comments = select(
+                    f"""
+                    select 
+                        u.email,
+                        c.text,
+                        u.name
+                    from comments c
+                    left outer join blog_posts b
+                        on c.post_id = b.id
+                    left outer join users u
+                        on u.id = c.author_id
+                    where 
+                        b.id = {post_id}
+                    """,
+                    fetch_all=True
+    )
     if comment_form.validate_on_submit():
         if not current_user.is_authenticated:
             flash("You need to login or register to comment.")
             return redirect(url_for("login"))
 
-        new_comment = Comment(
-            text=comment_form.comment_text.data,
-            comment_author=current_user,
-            parent_post=requested_post
-        )
-        db.session.add(new_comment)
-        db.session.commit()
-    return render_template("post.html", post=requested_post, current_user=current_user, form=comment_form)
+        id_max = select("SELECT MAX(id) FROM comments")['max']
+        print('hehe', comment_form.comment_text.data, current_user.id, requested_post['id'])
+        insert_row(f"INSERT INTO comments VALUES ({id_max + 1}, '{comment_form.comment_text.data}', {current_user.id}, {requested_post['id']})")
+
+    return render_template("post.html", post=requested_post, current_user=current_user, form=comment_form, comments=all_comments)
 
 
 @app.route("/new-post", methods=["GET", "POST"])
@@ -124,23 +136,15 @@ def show_post(post_id):
 def add_new_post():
     form = CreatePostForm()
     if form.validate_on_submit():
-        new_post = BlogPost(
-            title=form.title.data,
-            subtitle=form.subtitle.data,
-            body=form.body.data,
-            img_url=form.img_url.data,
-            author=current_user,
-            date=date.today().strftime("%B %d, %Y")
-        )
-        db.session.add(new_post)
-        db.session.commit()
+        row_count = select("SELECT MAX(id) FROM blog_posts")['max']
+        insert_row(f"INSERT INTO blog_posts VALUES ({row_count + 1}, {current_user.id}, '{form.title.data}', '{form.subtitle.data}', '{date.today().strftime('%B %d, %Y')}', '{form.body.data}', '{form.img_url.data}')")
         return redirect(url_for("get_all_posts"))
     return render_template("make-post.html", form=form, current_user=current_user)
 
 
 @app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
 def edit_post(post_id):
-    post = select(f"SELECT FROM blog_posts WHERE id={post_id}")
+    post = select(f"SELECT * FROM blog_posts WHERE id={post_id}")
     print(post_id)
     print(post)
     edit_form = CreatePostForm(
@@ -151,8 +155,8 @@ def edit_post(post_id):
         body=post['body']
     )
     if edit_form.validate_on_submit():
-        insert_row(f"UPDATE blog_posts SET title='{edit_form.title.data}', subtitle='{edit_form.subtitle.data}', img_url='{edit_form.img_url.data}', author_id='{current_user}', body='{edit_form.body.data}' WHERE id={post_id}")
-        return redirect(url_for("show_post", post_id=post['id']))
+        insert_row(f"UPDATE blog_posts SET title='{edit_form.title.data}', subtitle='{edit_form.subtitle.data}', img_url='{edit_form.img_url.data}', author_id={current_user.id}, body='{edit_form.body.data}' WHERE id={post_id}")
+        return redirect(url_for("show_post", post_id=post_id))
     return render_template("make-post.html", form=edit_form, is_edit=True, current_user=current_user)
 
 
