@@ -47,10 +47,14 @@ def admin_only(f):
 def register():
     form = RegisterForm()
     if form.validate_on_submit():
-        user = select(f"SELECT * FROM users WHERE email='{form.email.data}'")
-        if user:
-            flash("You've already signed up with that email, log in instead!")
-            return redirect(url_for('login'))
+        try:
+            user = select(f"SELECT * FROM users WHERE email='{form.email.data}'")
+        except:
+            pass
+        else:
+            if user:
+                flash("You've already signed up with that email, log in instead!")
+                return redirect(url_for('login'))
 
         hash_and_salted_password = generate_password_hash(
             form.password.data,
