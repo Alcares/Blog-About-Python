@@ -2,7 +2,7 @@ import psycopg2
 from config import config
 
 
-def select(query: str, fetch_all: bool = False) -> list[dict] | dict:
+def select(query, fetch_all=False):
     """ Connect to the PostgreSQL database server """
     conn = None
     try:
