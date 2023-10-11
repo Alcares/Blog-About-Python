@@ -1,10 +1,15 @@
 from imports import *
 from db import select, insert_row
 
+MAIL_ADDRESS = os.environ.get("EMAIL_KEY")
+MAIL_APP_PW = os.environ.get("PASSWORD_KEY")
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('FLASK_KEY')
 ckeditor = CKEditor(app)
 Bootstrap5(app)
+
+DEPTH_LEVEL = 0
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -100,15 +105,110 @@ def logout():
     return redirect(url_for('get_all_posts'))
 
 
-@app.route('/')
+@app.route('/', methods=["GET", "POST"])
 def get_all_posts():
-    posts = select('SELECT * FROM blog_posts', fetch_all=True)
-    return render_template("index.html", all_posts=posts, current_user=current_user)
+    result = False
+    order = False
+    if request.args.get('search') and request.args.get('order'):
+        result = request.form['search_bar']
+        order = request.args.get('order')
+        query = f"""SELECT
+                            name,
+                            blog_posts.id,
+                            title,
+                            subtitle,
+                            date,
+                            body,
+                            img_url,
+                            num_comments
+                        FROM blog_posts
+                        LEFT OUTER JOIN users
+                            ON users.id = blog_posts.author_id
+                        WHERE title ilike '%{result}%'
+                        ORDER BY {order}
+                        """
+    elif request.args.get('search'):
+        result = request.form['search_bar']
+        query = f"""SELECT
+                            name,
+                            blog_posts.id,
+                            title,
+                            subtitle,
+                            date,
+                            body,
+                            img_url,
+                            num_comments
+                        FROM blog_posts
+                        LEFT OUTER JOIN users
+                            ON users.id = blog_posts.author_id
+                        WHERE title ilike '%{result}%'
+                        ORDER BY date DESC
+                        """
+    elif request.args.get('order'):
+        order = request.args.get('order')
+        query = f"""SELECT
+                        name,
+                        blog_posts.id,
+                        title,
+                        subtitle,
+                        date,
+                        body,
+                        img_url,
+                        num_comments
+                    FROM blog_posts
+                    LEFT OUTER JOIN users
+                        ON users.id = blog_posts.author_id
+                    ORDER BY {order}
+                    """
+    else:
+        query = """
+                SELECT
+                    name,
+                    blog_posts.id,
+                    title,
+                    subtitle,
+                    date,
+                    body,
+                    img_url,
+                    num_comments
+                FROM blog_posts
+                LEFT OUTER JOIN users
+                    ON users.id = blog_posts.author_id
+                ORDER BY num_comments DESC
+                """
+    if not request.args.get('depth'):
+        query = f"""
+                SELECT * FROM ({query}) as p
+                LIMIT 2
+                """
+    else:
+        depth = int(request.args.get('depth'))
+        query = f"""
+                 SELECT * FROM ({query}) as p
+                 OFFSET {depth * 2}
+                 LIMIT 2
+                     """
+        posts = select(query, fetch_all=True)
+        return render_template("index.html", all_posts=posts, current_user=current_user, search=result, order=order, depth=depth)
+    posts = select(query, fetch_all=True)
+    return render_template("index.html", all_posts=posts, current_user=current_user, search=result, order=order)
 
 
 @app.route("/post/<int:post_id>", methods=["GET", "POST"])
 def show_post(post_id):
-    requested_post = select(f'SELECT * FROM blog_posts WHERE id={post_id}', fetch_all=False)
+    requested_post = select(f"""SELECT
+                        name,
+                        blog_posts.id,
+                        title,
+                        subtitle,
+                        date,
+                        body,
+                        img_url
+                    FROM blog_posts
+                    LEFT OUTER JOIN users
+                        ON users.id = blog_posts.author_id
+                    WHERE blog_posts.id={post_id}
+                    """, fetch_all=False)
     comment_form = CommentForm()
     all_comments = select(
                     f"""
@@ -132,9 +232,8 @@ def show_post(post_id):
             return redirect(url_for("login"))
 
         id_max = select("SELECT MAX(id) FROM comments")['max']
-        print('hehe', comment_form.comment_text.data, current_user.id, requested_post['id'])
         insert_row(f"INSERT INTO comments VALUES ({id_max + 1}, '{comment_form.comment_text.data}', {current_user.id}, {requested_post['id']})")
-
+        insert_row(f"UPDATE blog_posts SET num_comments = num_comments+1 WHERE id = {requested_post['id']}")
     return render_template("post.html", post=requested_post, current_user=current_user, form=comment_form, comments=all_comments)
 
 
@@ -181,34 +280,23 @@ def about():
 
 @app.route("/contact", methods=["GET", "POST"])
 def contact():
-    return render_template("contact.html", current_user=current_user)
+    if request.method == "POST":
+        data = request.form
+        send_email(data["name"], data["email"], data["phone"], data["message"])
+        return render_template("contact.html", msg_sent=True)
+    return render_template("contact.html", msg_sent=False)
 
-# Optional: You can inclue the email sending code from Day 60:
-# DON'T put your email and password here directly! The code will be visible when you upload to Github.
-# Use environment variables instead (Day 35)
 
-# MAIL_ADDRESS = os.environ.get("EMAIL_KEY")
-# MAIL_APP_PW = os.environ.get("PASSWORD_KEY")
-
-# @app.route("/contact", methods=["GET", "POST"])
-# def contact():
-#     if request.method == "POST":
-#         data = request.form
-#         send_email(data["name"], data["email"], data["phone"], data["message"])
-#         return render_template("contact.html", msg_sent=True)
-#     return render_template("contact.html", msg_sent=False)
-#
-#
-# def send_email(name, email, phone, message):
-#     email_message = f"Subject:New Message\n\nName: {name}\nEmail: {email}\nPhone: {phone}\nMessage:{message}"
-#     with smtplib.SMTP("smtp.gmail.com") as connection:
-#         connection.starttls()
-#         connection.login(MAIL_ADDRESS, MAIL_APP_PW)
-#         connection.sendmail(MAIL_ADDRESS, MAIL_APP_PW, email_message)
+def send_email(name, email, phone, message):
+    email_message = f"Subject:New Message\n\nName: {name}\nEmail: {email}\nPhone: {phone}\nMessage:{message}"
+    with smtplib.SMTP("smtp.gmail.com", port=587) as connection:
+        connection.starttls()
+        connection.login(MAIL_ADDRESS, MAIL_APP_PW)
+        connection.sendmail(MAIL_ADDRESS, MAIL_ADDRESS, email_message)
 
 
 if __name__ == "__main__":
     app.run(debug=False)
 
-# TODO Optional: add contact me email functionality
-# TODO display max 5 posts on main page
+
+# TODO add views/comments property to blog_post

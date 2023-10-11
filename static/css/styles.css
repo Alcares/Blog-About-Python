@@ -10770,6 +10770,7 @@ header.masthead .post-heading .meta a {
 .post-preview > a {
   color: #212529;
 }
+
 .post-preview > a:focus, .post-preview > a:hover {
   text-decoration: none;
   color: #0085A1;
@@ -10783,6 +10784,7 @@ header.masthead .post-heading .meta a {
   font-weight: 300;
   margin-bottom: 0.625rem;
 }
+
 .post-preview > .post-meta {
   font-size: 1.125rem;
   font-style: italic;

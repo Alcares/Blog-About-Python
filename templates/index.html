@@ -21,16 +21,49 @@
   <div class="row gx-4 gx-lg-5 justify-content-center">
     <div class="col-md-10 col-lg-8 col-xl-7">
       <!-- Post preview-->
+      {% if order: %}
+      <form action="{{ url_for('get_all_posts', search=True, order=order) }}" method="POST">
+      {% else: %}
+      <form action="{{ url_for('get_all_posts', search=True) }}" method="POST">
+      {% endif %}
+      <div class="input-group mb-3">
+          <input type="search" class="form-control" aria-label="Text input with dropdown button" placeholder="Search Posts" name="search_bar">
+          <div class="dropdown">
+            <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" value="f">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+              </svg>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="javascript:void(0)">Order By</a></li>
+              <li><hr class="dropdown-divider"></li>
+              {% if search: %}
+              <li><a class="dropdown-item" href="{{ url_for('get_all_posts', order='date DESC', search=search) }}">Newest</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('get_all_posts', order='date ASC', search=search) }}">Oldest</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('get_all_posts', order='num_comments DESC', search=search) }}">Most Popular</a></li>
+              {% else: %}
+              <li><a class="dropdown-item" href="{{ url_for('get_all_posts', order='date DESC') }}">Newest</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('get_all_posts', order='date ASC') }}">Oldest</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('get_all_posts', order='num_comments DESC') }}">Most Popular</a></li>
+              {% endif %}
+            </ul>
+          </div>
+
+      </div>
+      </form>
       {% for post in all_posts %}
       <div class="post-preview">
         <a href="{{ url_for('show_post', post_id=post['id']) }}">
           <h2 class="post-title">{{ post['title'] }}</h2>
-          <h3 class="post-subtitle">{{ post['subtitle'] }}</h3>
+          <h3 class="post-subtitle">{{ post['subtitle'] }}&nbsp;&nbsp;&nbsp;{{ post['num_comments'] }} <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-left-dots" viewBox="0 0 16 16">
+  <path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
+  <path d="M5 6a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+</svg></h3>
         </a>
         <p class="post-meta">
           Posted by
           <!-- post.author.name is now a User object -->
-          <a href="#">{{post['author_id']}}</a>
+          <a href="#">{{post['name']}}</a>
           on {{post['date']}}
           <!-- Only show delete button if user id is 1 (admin user) -->
           {% if current_user.id == 1: %}
@@ -56,7 +89,15 @@
 
       <!-- Pager-->
       <div class="d-flex justify-content-end mb-4">
-        <a class="btn btn-secondary text-uppercase" href="#!">Older Posts →</a>
+      {% if depth and order: %}
+        <a class="btn btn-secondary text-uppercase" href="{{ url_for('get_all_posts', depth=depth+1, order=order) }}">Older Posts →</a>
+      {% elif order: %}
+        <a class="btn btn-secondary text-uppercase" href="{{ url_for('get_all_posts', depth=1, order=order) }}">Older Posts →</a>
+      {% elif depth: %}
+        <a class="btn btn-secondary text-uppercase" href="{{ url_for('get_all_posts', depth=depth+1) }}">Older Posts →</a>
+      {% else: %}
+        <a class="btn btn-secondary text-uppercase" href="{{ url_for('get_all_posts', depth=1) }}">Older Posts →</a>
+      {% endif %}
       </div>
     </div>
   </div>
