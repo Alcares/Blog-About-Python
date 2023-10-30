@@ -5,9 +5,13 @@ from selenium.webdriver.chrome.options import Options
 from time import sleep
 from selenium.webdriver.common.by import By
 
+
 chrome_options = Options()
+chrome_options.add_argument('--headless')
+chrome_options.add_argument('--no-sandbox')
+chrome_options.add_argument('--disable-dev-shm-usage')
 chrome_options.add_experimental_option("detach", True)
-driver = webdriver.Chrome()
+driver = webdriver.Chrome(options=chrome_options)
 
 
 def run_driver():
