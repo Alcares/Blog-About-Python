@@ -10855,3 +10855,28 @@ header.masthead .post-heading .meta a {
     color: #ee6f57;
     text-align: center;
 }
+
+.my-true-love {
+  width: 100%;
+  height: auto;
+}
+
+
+.my-animation {
+    opacity: 0;
+    transform: translateX(-10%);
+    transition: all 0.7s ease-out;
+    transition-delay: 0.4s;
+
+}
+
+.scroll-my-animation {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+
+#bold-me {
+    font-weight: 700;
+    font-size: 23px;
+}

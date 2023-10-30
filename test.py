@@ -1,6 +1,5 @@
-x = None
+result = map(lambda x: print(x.upper()), ['lala', 'hehe', 'gig'])
+print(list(result))
 
 
-if type(x) == type(None):
-    print('f')
-    print(type(x))
+

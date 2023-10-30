@@ -63,7 +63,7 @@
         <p class="post-meta">
           Posted by
           <!-- post.author.name is now a User object -->
-          <a href="#">{{post['name']}}</a>
+          <a href="{{ url_for('dashboard', user_id=post['name']) }}">{{post['name']}}</a>
           on {{post['date']}}
           <!-- Only show delete button if user id is 1 (admin user) -->
           {% if current_user.id == 1: %}
@@ -83,6 +83,14 @@
           class="btn btn-primary float-right"
           href="{{url_for('add_new_post')}}"
           >Create New Post</a
+        >
+      </div>
+      {% elif current_user.is_authenticated: %}
+      <div class="d-flex justify-content-end mb-4">
+        <a
+          class="btn btn-primary float-right"
+          href="{{url_for('new_submission')}}"
+          >Submit a New Post</a
         >
       </div>
       {% endif %}
