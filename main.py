@@ -95,7 +95,7 @@ def login():
                 flash('Password incorrect, please try again.')
                 return redirect(url_for('login'))
             else:
-                user = User(user['id'])
+                user = User(user['id'], user['name'])
                 login_user(user)
                 return redirect(url_for('get_all_posts'))
 
