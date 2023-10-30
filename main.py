@@ -1,5 +1,6 @@
 from imports import *
 from db import *
+from aut import run_driver
 
 POSTS_PER_PAGE = 3
 
@@ -322,6 +323,12 @@ def dashboard(user_id):
 def all_submissions():
     posts = select('SELECT * FROM user_posts', fetch_all=True)
     return render_template("index.html", all_posts=posts, current_user=current_user)
+
+
+@app.route('/simulate_user_activity')
+def keep_active():
+    run_driver()
+    send_email('marcin', 'marcin@asdf.com', '4237941234', 'Poszło! Selenium aktywuje strone')
 
 
 if __name__ == "__main__":

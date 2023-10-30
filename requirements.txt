@@ -11,3 +11,4 @@ SQLAlchemy==2.0.19
 gunicorn==21.2.0
 matplotlib
 psycopg2
+selenium
