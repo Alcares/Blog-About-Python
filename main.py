@@ -325,12 +325,6 @@ def all_submissions():
     return render_template("index.html", all_posts=posts, current_user=current_user)
 
 
-@app.route('/simulate_user_activity')
-def keep_active():
-    run_driver()
-    send_email('marcin', 'marcin@asdf.com', '4237941234', 'Poszło! Selenium aktywuje strone')
-
-
 if __name__ == "__main__":
     app.run(debug=False)
 

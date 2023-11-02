@@ -10677,6 +10677,7 @@ header.masthead {
   background-color: #6c757d;
   background-size: cover;
   background-attachment: scroll;
+  backdrop-filter: brightness(20%);
 }
 header.masthead:before {
   content: "";
@@ -10685,8 +10686,8 @@ header.masthead:before {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #212529;
-  opacity: 0.5;
+  background-color: #000;
+  opacity: 0.6;
 }
 header.masthead .page-heading,
 header.masthead .post-heading,
