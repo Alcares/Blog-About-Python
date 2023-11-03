@@ -10898,7 +10898,9 @@ img.mini-image {
   img.mini-image {
     text-align: center;
     float: none !important;
-    width: 21.5em;
+    width: 100%;
   }
 }
+
+
 
