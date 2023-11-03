@@ -233,7 +233,7 @@ def new_submission():
         add_user_blog_post(row_count+1, current_user.id, form.title.data, form.subtitle.data, date.today().strftime('%B %d, %Y'), form.body.data, form.img_url.data)
         return redirect(url_for("get_all_posts"))
     return render_template("make-post.html", form=form, current_user=current_user)
-
+#yes
 
 
 @app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
