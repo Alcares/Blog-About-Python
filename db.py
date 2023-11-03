@@ -249,6 +249,26 @@ def update_post(title, subtitle, img_url, user_id, body, post_id):
             conn.close()
 
 
+def increment_view(post_id):
+    conn = None
+    try:
+        params = config()
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        query = "UPDATE blog_posts SET views = views + 1 WHERE id = %s"
+        cur.execute(query, (post_id, ))
+        conn.commit()
+        cur.close()
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        return error
+    else:
+        print('Success')
+    finally:
+        if conn is not None:
+            conn.close()
+
 if __name__ == '__main__':
     current_user = 1
     posts = select(f'SELECT blog_posts.id, blog_posts.num_comments  FROM blog_posts LEFT OUTER JOIN users ON users.id = blog_posts.author_id WHERE users.id = {current_user} ORDER BY date asc', fetch_all=True)

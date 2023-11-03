@@ -2,7 +2,7 @@ from imports import *
 from db import *
 from aut import run_driver
 
-POSTS_PER_PAGE = 3
+POSTS_PER_PAGE = 5
 
 MAIL_ADDRESS = os.environ.get("EMAIL_KEY")
 MAIL_APP_PW = os.environ.get("PASSWORD_KEY")
@@ -134,7 +134,8 @@ def get_all_posts():
                             date,
                             body,
                             img_url,
-                            num_comments
+                            num_comments,
+                            views
                         FROM blog_posts
                         LEFT OUTER JOIN users
                             ON users.id = blog_posts.author_id
@@ -151,7 +152,8 @@ def get_all_posts():
                         date,
                         body,
                         img_url,
-                        num_comments
+                        num_comments,
+                        views
                     FROM blog_posts
                     LEFT OUTER JOIN users
                         ON users.id = blog_posts.author_id
@@ -167,7 +169,8 @@ def get_all_posts():
                     date,
                     body,
                     img_url,
-                    num_comments
+                    num_comments,
+                    views
                 FROM blog_posts
                 LEFT OUTER JOIN users
                     ON users.id = blog_posts.author_id
@@ -203,18 +206,24 @@ def show_post(post_id):
 
         id_max = select("SELECT MAX(id) FROM comments")['max']
         insert_comment(id_max + 1, comment_form.comment_text.data, current_user.id, requested_post['id'])
+    # increment view
+    increment_view(post_id)
     return render_template("post.html", post=requested_post, current_user=current_user, form=comment_form, comments=all_comments)
 
 
 @app.route("/new-post", methods=["GET", "POST"])
 @admin_only
 def add_new_post():
-    form = CreatePostForm()
+    if current_user.id == 1:
+        form = CreatePostFormAdmin()
+    else:
+        form = CreatePostForm()
     if form.validate_on_submit():
         row_count = select("SELECT MAX(id) FROM blog_posts")['max']
         insert_row(f"INSERT INTO blog_posts VALUES ({row_count + 1}, {current_user.id}, '{form.title.data}', '{form.subtitle.data}', '{date.today().strftime('%B %d, %Y')}', '{form.body.data}', '{form.img_url.data}')")
         return redirect(url_for("get_all_posts"))
     return render_template("make-post.html", form=form, current_user=current_user)
+
 
 @app.route("/new-submission", methods=["GET", "POST"])
 def new_submission():
@@ -232,13 +241,22 @@ def edit_post(post_id):
     post = get_post(post_id)
     print(post_id)
     print(post)
-    edit_form = CreatePostForm(
-        title=post['title'],
-        subtitle=post['subtitle'],
-        img_url=post['img_url'],
-        author=post['author_id'],
-        body=post['body']
-    )
+    if current_user.id != 1:
+        edit_form = CreatePostForm(
+            title=post['title'],
+            subtitle=post['subtitle'],
+            img_url=post['img_url'],
+            author=post['author_id'],
+            body=post['body']
+        )
+    else:
+        edit_form = CreatePostFormAdmin(
+            title=post['title'],
+            subtitle=post['subtitle'],
+            img_url=post['img_url'],
+            author=post['author_id'],
+            body=post['body']
+        )
     if edit_form.validate_on_submit():
         update_post(edit_form.title.data, edit_form.subtitle.data,
                     edit_form.img_url.data, current_user.id, edit_form.body.data, post_id)

@@ -19,7 +19,8 @@
 <!-- Main Content-->
 <div class="container px-4 px-lg-5">
   <div class="row gx-4 gx-lg-5 justify-content-center">
-    <div class="col-md-10 col-lg-8 col-xl-7">
+<!--    <div class="col-md-10 col-lg-8 col-xl-7">-->
+    <div class="col-md-10 col-sm-12">
       <!-- Post preview-->
       {% if order: %}
       <form action="{{ url_for('get_all_posts', search=True, order=order) }}" method="POST">
@@ -52,15 +53,19 @@
       </div>
       </form>
       {% for post in all_posts %}
-      <div class="post-preview">
-        <a href="{{ url_for('show_post', post_id=post['id']) }}">
-          <h2 class="post-title">{{ post['title'] }}</h2>
-          <h3 class="post-subtitle">{{ post['subtitle'] }}&nbsp;&nbsp;&nbsp;{{ post['num_comments'] }} <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-left-dots" viewBox="0 0 16 16">
-  <path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
-  <path d="M5 6a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
-</svg></h3>
-        </a>
-        <p class="post-meta">
+      <div class="post-preview row my-animation">
+        <div class="col">
+          <a href="{{ url_for('show_post', post_id=post['id']) }}">
+            <h2 class="post-title">{{ post['title'] }}</h2>
+            <h3 class="post-subtitle">{{ post['subtitle'] }}&nbsp;&nbsp;&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
+  <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+  <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+</svg> {{ post['views'] }}&nbsp;&nbsp;&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-left-dots" viewBox="0 0 16 16">
+                          <path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
+                          <path d="M5 6a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+            </svg>&nbsp;{{ post['num_comments'] }}</h3>
+          </a>
+          <p class="post-meta">
           Posted by
           <!-- post.author.name is now a User object -->
           <a href="{{ url_for('dashboard', user_id=post['name']) }}">{{post['name']}}</a>
@@ -69,7 +74,11 @@
           {% if current_user.id == 1: %}
           <a href="{{url_for('delete_post', post_id=post['id']) }}">✘</a>
           {% endif %}
-        </p>
+          </p>
+        </div>
+        <div class="col-md-4 col-sm-12">
+          <img class="mini-image" src="{{ post['img_url'] }}" style="float: right;">
+        </div>
       </div>
       <!-- Divider-->
       <hr class="my-4" />
@@ -98,17 +107,25 @@
       <!-- Pager-->
       <div class="d-flex justify-content-end mb-4">
       {% if depth and order: %}
-        <a class="btn btn-secondary text-uppercase" href="{{ url_for('get_all_posts', depth=depth+1, order=order) }}">Older Posts →</a>
+        <a id="show-more-posts" class="btn btn-secondary text-uppercase" href="{{ url_for('get_all_posts', depth=depth+1, order=order) }}">Show More →</a>
       {% elif order: %}
-        <a class="btn btn-secondary text-uppercase" href="{{ url_for('get_all_posts', depth=1, order=order) }}">Older Posts →</a>
+        <a id="show-more-posts" class="btn btn-secondary text-uppercase" href="{{ url_for('get_all_posts', depth=1, order=order) }}">Show More →</a>
       {% elif depth: %}
-        <a class="btn btn-secondary text-uppercase" href="{{ url_for('get_all_posts', depth=depth+1) }}">Older Posts →</a>
+        <a id="show-more-posts" class="btn btn-secondary text-uppercase" href="{{ url_for('get_all_posts', depth=depth+1) }}">Show More →</a>
       {% else: %}
-        <a class="btn btn-secondary text-uppercase" href="{{ url_for('get_all_posts', depth=1) }}">Older Posts →</a>
+        <a id="show-more-posts" class="btn btn-secondary text-uppercase" href="{{ url_for('get_all_posts', depth=1) }}">Show More →</a>
       {% endif %}
       </div>
     </div>
   </div>
 </div>
+<!--<div class="container px-4 px-lg-5">-->
+<!--  <div class="row gx-4 gx-lg-5 justify-content-center">-->
+<!--    <div class="col-md-10 col-lg-8 col-xl-7">-->
+<!--      {% for post in all_posts %}-->
+<!--      <div><img src="{{ post['img_url'] }}"></div>-->
+
+<!--      {% endfor %}-->
+<!--</div>-->
 
 {% include "footer.html" %}
